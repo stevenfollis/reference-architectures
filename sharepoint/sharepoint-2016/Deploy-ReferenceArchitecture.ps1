@@ -7,7 +7,7 @@ param(
     [Parameter(Mandatory = $true)]
     $Location,
     [Parameter(Mandatory = $true)]
-    [ValidateSet("All", "Onpremise","Infrastructure", "CreateVpn","ConnectVPN", "Workload","Security")]
+    [ValidateSet("All", "Onpremise","Infrastructure", "CreateVpn", "Workload","Security")]
     $Mode
 )
 
@@ -94,10 +94,10 @@ $onpremiseReplicationSiteForestExtensionParametersFile = [System.IO.Path]::Combi
 $onpremiseVirtualNetworkGatewayParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\virtualNetworkGateway.parameters.json")
 $onpremiseConnectionParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\connection.parameters.json")
 
-# Parameters OnPremisis for ADDS 
-$azureVirtualNetworkOnpremiseAndAzureDnsParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\virtualNetwork-with-onpremise-and-azure-dns.parameters.json")
-$azureAddAddsDomainControllerExtensionParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\add-adds-domain-controller.parameters.json")
-$azureVirtualNetworkGatewayParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\virtualNetworkGateway.parameters.json")
+# Parameters OnPremise for it's ADDS  and sp2016  
+$sp2016VirtualNetworkOnpremiseAndAzureDnsParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\virtualNetwork-with-onpremise-and-azure-dns.parameters.json")
+$sp2016AddAddsDomainControllerExtensionParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\add-adds-domain-controller.parameters.json")
+$sp2016VirtualNetworkGatewayParametersFile = [System.IO.Path]::Combine($PSScriptRoot, "parameters\onpremise\adds\virtualNetworkGateway.parameters.json")
 
 
 
@@ -110,11 +110,6 @@ $workloadResourceGroupName = "ra-sp2016-workload-rg"
 # Azure Onpremise Deployments
 $onpremiseNetworkResourceGroupName = "ra-adds-onpremise-sp2016-rg"
 
-# Azure sp2016 Deployments
-$azureNetworkResourceGroupName = "ra-sp2016-network-rg"
-
-
-
 # Login to Azure and select your subscription
 Login-AzureRmAccount -SubscriptionId $SubscriptionId | Out-Null
 
@@ -125,34 +120,34 @@ if ($Mode -eq "Onpremise" -Or $Mode -eq "All")
 
     $onpremiseNetworkResourceGroup = New-AzureRmResourceGroup -Name $onpremiseNetworkResourceGroupName -Location $Location
 
-    Write-Host "Creating onpremise virtual network..."
+    Write-Host "Creating OnPremise virtual network..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-vnet-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName -TemplateUri $virtualNetworkTemplate.AbsoluteUri `
         -TemplateParameterFile $onpremiseVirtualNetworkParametersFile
 
-    Write-Host "Deploying ADDS servers..."
+    Write-Host "Deploying OnPremise ADDS servers..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-adds-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
         -TemplateUri $virtualMachineTemplate.AbsoluteUri -TemplateParameterFile $onpremiseADDSVirtualMachinesParametersFile
 
     # Remove the Azure DNS entry since the forest will create a DNS forwarding entry.
-    Write-Host "Updating virtual network DNS servers..."
+    Write-Host "Updating OnPremise virtual network DNS servers..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-dns-vnet-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName -TemplateUri $virtualNetworkTemplate.AbsoluteUri `
         -TemplateParameterFile $onpremiseVirtualNetworkDnsParametersFile
 
-    Write-Host "Creating ADDS forest..."
+    Write-Host "Creating OnPremise ADDS forest..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-adds-forest-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
         -TemplateUri $virtualMachineExtensionsTemplate.AbsoluteUri -TemplateParameterFile $onpremiseCreateAddsForestExtensionParametersFile
 
-    Write-Host "Creating ADDS domain controller..."
+    Write-Host "Creating OnPremise ADDS domain controller..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-adds-dc-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
         -TemplateUri $virtualMachineExtensionsTemplate.AbsoluteUri -TemplateParameterFile $onpremiseAddAddsDomainControllerExtensionParametersFile
 
     # Contoso Domain is up and running - create user VM in user subnet
-    Write-Host "Deploying userbox..."
+    Write-Host "Deploying OnPremise userbox..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-usserbox-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
         -TemplateUri $virtualMachineTemplate.AbsoluteUri -TemplateParameterFile $onpremiseUserVirtualMachinesParametersFile
@@ -216,13 +211,13 @@ if ($Mode -eq "Infrastructure" -Or $Mode -eq "All")
 if ($Mode -eq "CreateVPN" -Or $Mode -eq "All") 
 {
     Write-Host "CreateVPN Section ---------------------------------------------------"
-    Write-Host "Add CreateVPN Section"
+    Write-Host " "
 
     $onpremiseNetworkResourceGroup = Get-AzureRmResourceGroup -Name $onpremiseNetworkResourceGroupName
-    $azureNetworkResourceGroup = Get-AzureRmResourceGroup -Name $azureNetworkResourceGroupName
+    $sp2016NetworkResourceGroup = Get-AzureRmResourceGroup -Name  $infrastructureResourceGroupName 
 
 
-    # # SharePoint VPN Gateway ..been using the other create VPN
+    # # SharePoint VPN Gateway ..been using the other create VPN  - plan on removing
     # Write-Host "Creating SharePoint VPN Gateway..."
     # New-AzureRmResourceGroupDeployment -Name "ra-sp2016-vpn-deployment" `
     #    -ResourceGroupName $azureNetworkResourceGroup.ResourceGroupName -TemplateUri $virtualNetworkTemplate.AbsoluteUri `
@@ -237,21 +232,16 @@ if ($Mode -eq "CreateVPN" -Or $Mode -eq "All")
 
     # # DEV: Once the above is working.. Then the following should add it to the existing ra-sp2016
 
-    # redundent
-    Write-Host "Deploying Azure Virtual Network Gateway..."
-    New-AzureRmResourceGroupDeployment -Name "ra-adds-vpn-gateway-deployment" -ResourceGroupName $azureNetworkResourceGroup.ResourceGroupName `
-        -TemplateUri $virtualNetworkGatewayTemplate.AbsoluteUri -TemplateParameterFile $azureVirtualNetworkGatewayParametersFile
+    # SharePoint VPN Gateway ..been using the other create VPN
+    Write-Host "Deploying SharePoint 2016 Virtual Network Gateway..."
+    New-AzureRmResourceGroupDeployment -Name "ra-adds-vpn-gateway-deployment" -ResourceGroupName $sp2016NetworkResourceGroup.ResourceGroupName `
+        -TemplateUri $virtualNetworkGatewayTemplate.AbsoluteUri -TemplateParameterFile $sp2016VirtualNetworkGatewayParametersFile
 
     Write-Host "Creating Onpremise connection..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-connection-deployment" `
         -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
         -TemplateFile $onPremiseConnectionTemplateFile -TemplateParameterFile $onpremiseConnectionParametersFile
 
-
-
-}
-if ($Mode -eq "ConnectVPN" -Or $Mode -eq "All") 
-{
     Write-Host "ConnectVPN Section ---------------------------------------------------"
 
     # OnPremise Add the replication site.
@@ -261,25 +251,33 @@ if ($Mode -eq "ConnectVPN" -Or $Mode -eq "All")
     #     -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName `
     #     -TemplateUri $virtualMachineExtensionsTemplate.AbsoluteUri -TemplateParameterFile $onpremiseReplicationSiteForestExtensionParametersFile
 
-    $azureNetworkResourceGroup = Get-AzureRmResourceGroup -Name $azureNetworkResourceGroupName
-    # Update DNS server to point to onpremise and azure
-    Write-Host "Updating virtual network DNS..."
-    New-AzureRmResourceGroupDeployment -Name "ra-adds-vnet-onpremise-azure-dns-deployment" `
-        -ResourceGroupName $azureNetworkResourceGroup.ResourceGroupName `
-        -TemplateUri $virtualNetworkTemplate.AbsoluteUri -TemplateParameterFile $azureVirtualNetworkOnpremiseAndAzureDnsParametersFile
+    # Update On-Premise DNS Server to point to onpremise aand azure
+    Write-Host "Updating OnPremise DNS Server to point to onpremise aand azure..."
+    New-AzureRmResourceGroupDeployment -Name "ra-adds-onpremise-dns-vnet-deployment" `
+        -ResourceGroupName $onpremiseNetworkResourceGroup.ResourceGroupName -TemplateUri $virtualNetworkTemplate.AbsoluteUri `
+        -TemplateParameterFile $onpremiseVirtualNetworkDnsParametersFile    
 
-    # Join the domain and create DCs
-    Write-Host "Creating ADDS domain controllers..."
+
+    $sp2016NetworkResourceGroup = Get-AzureRmResourceGroup -Name $infrastructureResourceGroupName
+    # Update SharePoint 2016 DNS server to point to onpremise and azure
+    Write-Host "Updating SharePoint 2016 DNS server to point to onpremise and azure..."
+    New-AzureRmResourceGroupDeployment -Name "ra-adds-vnet-onpremise-azure-dns-deployment" `
+        -ResourceGroupName $sp2016NetworkResourceGroup.ResourceGroupName `
+        -TemplateUri $virtualNetworkTemplate.AbsoluteUri -TemplateParameterFile $sp2016VirtualNetworkOnpremiseAndAzureDnsParametersFile
+
+
+    # Join the domain and create DCs  - Check with Telmo seems out of sync
+    Write-Host "Creating SharePoint 2016 ADDS domain controllers..."
     New-AzureRmResourceGroupDeployment -Name "ra-adds-adds-dc-deployment" `
         -ResourceGroupName $azureNetworkResourceGroup.ResourceGroupName `
-        -TemplateUri $virtualMachineExtensionsTemplate.AbsoluteUri -TemplateParameterFile $azureAddAddsDomainControllerExtensionParametersFile
+        -TemplateUri $virtualMachineExtensionsTemplate.AbsoluteUri -TemplateParameterFile $sp2016AddAddsDomainControllerExtensionParametersFile
 
 }
 
 if ($Mode -eq "Workload" -Or $Mode -eq "All")
 {
     Write-Host "SharePoint 2016 Workload Section ---------------------------------------------------"
-    Write-Host "Add CreateVPN Section"
+    Write-Host "  "
 
 
     Write-Host "Creating workload resource group..."
