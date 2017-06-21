@@ -67,7 +67,7 @@
             "autoUpgradeMinorVersion": false,
             "settingsConfigMapperUri": "https://raw.githubusercontent.com/mspnp/template-building-blocks/v1.0.0/templates/resources/Microsoft.Compute/virtualMachines/extensions/vm-extension-passthrough-settings-mapper.json",
             "settingsConfig": {
-              "modulesURL": "https://raw.githubusercontent.com/mspnp/reference-architectures/master/virtual-machines/n-tier-windows/extensions/CreateFileShareWitness.ps1.zip",
+              "modulesURL": "https://github.com/mspnp/reference-architectures/blob/larry/sptest10/sharepoint/sharepoint-2016/extensions/CreateFileShareWitness.ps1.zip?raw=true",
               "configurationFunction": "CreateFileShareWitness.ps1\\CreateFileShareWitness",
               "properties": {
                 "domainName": "contoso.local",
