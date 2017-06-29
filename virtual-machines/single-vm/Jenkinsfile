@@ -53,8 +53,8 @@ node {
       
   // Create new ARM Deployment
   sh 'az group deployment create \
-      --resource-group ra-single-vm-rg-arm
-      --template-uri https://raw.githubusercontent.com/mspnp/reference-architectures/master/virtual-machines/single-vm/azuredeploy.json'
+    --resource-group ra-single-vm-rg-arm
+    --template-uri https://raw.githubusercontent.com/mspnp/reference-architectures/master/virtual-machines/single-vm/azuredeploy.json'
 }
 
 stage 'ARM:Cleanup'
