@@ -1,0 +1,58 @@
+stage 'Prepare : Clone Source'
+node {
+  // Clean Jenkins workspace
+  cleanWs()
+
+  // Clone git repository from GitHub to Jenkins workspace
+  git 'https://github.com/mspnp/reference-architectures.git'
+}
+
+stage 'Prepare : Azure CLI (1+2)'
+node {
+  withCredentials([string(credentialsId: 'spUsername', variable: 'spUsername'), string(credentialsId: 'spPassword', variable: 'spPassword'), string(credentialsId: 'spTenant', variable: 'spTenant')]) {
+    // Azure CLI 1.0
+    sh 'azure login \
+        --service-principal \
+        --username $spUsername \
+        --password $spPassword \
+        --tenant $spTenant'
+ 
+    // Azure CLI 2.0
+    sh 'az login \
+      --service-principal \
+      --username $spUsername \
+      --password $spPassword \
+      --tenant $spTenant'
+  }
+}
+
+stage 'Bash'
+node {
+  // Load Jenkins Credentials into environment variables
+  withCredentials([string(credentialsId: 'azSubscription', variable: 'azSubscription')]) {
+    // Run deployment script
+    sh 'bash ./virtual-machines/multi-vm/deploy-reference-architecture.sh \
+      --location westus \
+      --os-type linux \
+      --subscription 9f4d814b-7085-44ae-8a42-bbae2a5a3f35'
+    
+    // Delete Resoure Group
+    sh 'azure group delete \
+    --name ra-multi-vm-rg \
+    --quiet'  
+  }
+}
+
+stage 'ARM'
+node {
+  // Create a Resource Group
+  sh 'az group create --name ra-multi-vm-rg --location westus'
+      
+  // Create new ARM Deployment
+  sh 'az group deployment create --resource-group ra-multi-vm-rg --template-file ./virtual-machines/multi-vm/azuredeploy.json'
+
+  // Delete Resource Group
+  sh 'az group delete \
+    --name ra-multi-vm-rg \
+    --yes'
+}
