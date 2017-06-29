@@ -1,0 +1,32 @@
+stage 'Authenticate CLI'
+node {
+  withCredentials([string(credentialsId: 'spUsername', variable: 'spUsername'), string(credentialsId: 'spPassword', variable: 'spPassword'), string(credentialsId: 'spTenant', variable: 'spTenant')]) {
+    sh 'azure login \
+        --service-principal \
+        --username $spUsername \
+        --password $spPassword \
+        --tenant $spTenant'
+  }
+}
+
+stage 'Clone Source'
+node {
+  git 'https://github.com/mspnp/reference-architectures.git'
+}
+
+stage 'Deployment Script'
+node {
+  withCredentials([string(credentialsId: 'azSubscription', variable: 'azSubscription')]) {
+    sh 'bash ./virtual-machines/single-vm/deploy-reference-architecture.sh \
+      --location westus \
+      --os-type linux \
+      --subscription 9f4d814b-7085-44ae-8a42-bbae2a5a3f35'
+  }
+}
+
+stage 'Cleanup'
+node {
+  sh 'azure group delete \
+    --name ra-single-vm-rg \
+    --quiet'   
+}
