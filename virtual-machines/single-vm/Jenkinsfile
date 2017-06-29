@@ -1,4 +1,4 @@
-stage 'Clone Source'
+stage 'Prepare : Clone Source'
 node {
   // Clean Jenkins workspace
   cleanWs()
@@ -7,7 +7,7 @@ node {
   git 'https://github.com/mspnp/reference-architectures.git'
 }
 
-stage 'Login to Azure CLI with SPN (v1 + v2)'
+stage 'Prepare : Azure CLI (1+2)'
 node {
   withCredentials([string(credentialsId: 'spUsername', variable: 'spUsername'), string(credentialsId: 'spPassword', variable: 'spPassword'), string(credentialsId: 'spTenant', variable: 'spTenant')]) {
     // Azure CLI 1.0
@@ -26,7 +26,7 @@ node {
   }
 }
 
-stage 'Bash:Deploy'
+stage 'Bash'
 node {
   // Load Jenkins Credentials into environment variables
   withCredentials([string(credentialsId: 'azSubscription', variable: 'azSubscription')]) {
@@ -35,29 +35,23 @@ node {
       --location westus \
       --os-type linux \
       --subscription 9f4d814b-7085-44ae-8a42-bbae2a5a3f35'
+    
+    // Delete Resoure Group
+    sh 'azure group delete \
+    --name ra-single-vm-rg \
+    --quiet'  
   }
 }
 
-stage 'Bash:Cleanup'
-node {
-  // Delete Resoure Group
-  sh 'azure group delete \
-    --name ra-single-vm-rg \
-    --quiet'   
-}
-
-stage 'ARM:Deploy'
+stage 'ARM'
 node {
   // Create a Resource Group
   sh 'az group create --name ra-single-vm-rg-arm --location westus'
       
   // Create new ARM Deployment
   sh 'az group deployment create --resource-group ra-single-vm-rg-arm --template-file ./virtual-machines/single-vm/azuredeploy.json'
-}
 
-stage 'ARM:Cleanup'
-node {
-  // Delete Resource Group
+    // Delete Resource Group
   sh 'az group delete \
     --name ra-single-vm-rg-arm \
     --yes'
