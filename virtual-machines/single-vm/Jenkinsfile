@@ -1,4 +1,4 @@
-stage 'Authenticate CLI'
+stage 'Login with SP'
 node {
   withCredentials([string(credentialsId: 'spUsername', variable: 'spUsername'), string(credentialsId: 'spPassword', variable: 'spPassword'), string(credentialsId: 'spTenant', variable: 'spTenant')]) {
     sh 'azure login \
@@ -14,7 +14,7 @@ node {
   git 'https://github.com/mspnp/reference-architectures.git'
 }
 
-stage 'Deployment Script'
+stage 'Deploy'
 node {
   withCredentials([string(credentialsId: 'azSubscription', variable: 'azSubscription')]) {
     sh 'bash ./virtual-machines/single-vm/deploy-reference-architecture.sh \
