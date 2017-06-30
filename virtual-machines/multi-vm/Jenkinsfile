@@ -33,7 +33,6 @@ node {
     // Run deployment script
     sh 'bash ./virtual-machines/multi-vm/deploy-reference-architecture.sh \
       --location westus \
-      --os-type linux \
       --subscription $azSubscription'
     
     // Delete Resoure Group
